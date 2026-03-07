@@ -43,19 +43,23 @@ async def sync(ctx):
 
 # --- /say (inline for single line, modal for multiline) ---
 @tree.command(name="say", description="Send a message as Sumi Bot in this channel")
-@app_commands.describe(message="Message to send (leave empty to open multiline editor)")
-async def say(interaction: discord.Interaction, message: str = None):
+@app_commands.describe(
+    message="Message to send (leave empty to open multiline editor)",
+    image="Image to attach to the message"
+)
+async def say(interaction: discord.Interaction, message: str = None, image: discord.Attachment = None):
     if not has_permission(interaction.user):
         await interaction.response.send_message("❌ You need Manage Messages permission.", ephemeral=True)
         return
 
-    # If message provided inline, send directly
-    if message:
-        await interaction.channel.send(message)
+    # If message or image provided inline, send directly
+    if message or image:
+        file = await image.to_file() if image else None
+        await interaction.channel.send(content=message, file=file)
         await silent(interaction)
         return
 
-    # Otherwise open modal for multiline
+    # Otherwise open modal for multiline (modals cannot include file uploads)
     channel = interaction.channel
 
     class SayModal(discord.ui.Modal, title="Send Message as Bot"):
@@ -75,17 +79,29 @@ async def say(interaction: discord.Interaction, message: str = None):
 
 # --- /edit ---
 @tree.command(name="edit", description="Edit a previous bot message in this channel")
-@app_commands.describe(message_id="ID of the bot message to edit", new_content="New message content")
-async def edit(interaction: discord.Interaction, message_id: str, new_content: str):
+@app_commands.describe(
+    message_id="ID of the bot message to edit",
+    new_content="New message content",
+    image="New image to attach (replaces existing attachments)"
+)
+async def edit(interaction: discord.Interaction, message_id: str, new_content: str = None, image: discord.Attachment = None):
     if not has_permission(interaction.user):
         await interaction.response.send_message("❌ You need Manage Messages permission.", ephemeral=True)
+        return
+    if not new_content and not image:
+        await interaction.response.send_message("❌ Provide new content, a new image, or both.", ephemeral=True)
         return
     try:
         target = await interaction.channel.fetch_message(int(message_id))
         if target.author != bot.user:
             await interaction.response.send_message("❌ I can only edit my own messages.", ephemeral=True)
             return
-        await target.edit(content=new_content)
+        kwargs = {}
+        if new_content is not None:
+            kwargs["content"] = new_content
+        if image:
+            kwargs["attachments"] = [await image.to_file()]
+        await target.edit(**kwargs)
         await silent(interaction)
     except ValueError:
         await interaction.response.send_message("❌ Invalid message ID.", ephemeral=True)
@@ -105,6 +121,30 @@ async def delete(interaction: discord.Interaction, message_id: str):
             await interaction.response.send_message("❌ I can only delete my own messages.", ephemeral=True)
             return
         await target.delete()
+        await silent(interaction)
+    except ValueError:
+        await interaction.response.send_message("❌ Invalid message ID.", ephemeral=True)
+    except discord.NotFound:
+        await interaction.response.send_message("❌ Message not found.", ephemeral=True)
+
+# --- /reply (slash command with image support) ---
+@tree.command(name="reply", description="Reply to a message as Sumi Bot")
+@app_commands.describe(
+    message_id="ID of the message to reply to",
+    message="Text content of the reply",
+    image="Image to attach to the reply"
+)
+async def reply(interaction: discord.Interaction, message_id: str, message: str = None, image: discord.Attachment = None):
+    if not has_permission(interaction.user):
+        await interaction.response.send_message("❌ You need Manage Messages permission.", ephemeral=True)
+        return
+    if not message and not image:
+        await interaction.response.send_message("❌ Provide a message, an image, or both.", ephemeral=True)
+        return
+    try:
+        target = await interaction.channel.fetch_message(int(message_id))
+        file = await image.to_file() if image else None
+        await target.reply(content=message, file=file)
         await silent(interaction)
     except ValueError:
         await interaction.response.send_message("❌ Invalid message ID.", ephemeral=True)
