@@ -181,6 +181,45 @@ async def reply(interaction: discord.Interaction, message_id: str, message: str 
     except discord.NotFound:
         await interaction.response.send_message("❌ Message not found.", ephemeral=True)
 
+# --- /help ---
+@tree.command(name="help", description="List all available Sumi Bot commands")
+async def help_command(interaction: discord.Interaction):
+    embed = discord.Embed(
+        title="📖  Sumi Bot — Commands",
+        color=discord.Color.blurple(),
+    )
+
+    embed.add_field(name="📢  Messaging", value=(
+        "`/say` — Send a message as Sumi Bot (inline or multiline modal). Supports image attachment.\n"
+        "`/edit` — Edit a previous bot message by ID. Supports updating text and/or image.\n"
+        "`/delete` — Delete a bot message by ID.\n"
+        "`/reply` — Reply to any message by ID as Sumi Bot. Supports image attachment."
+    ), inline=False)
+
+    embed.add_field(name="📊  Polls", value=(
+        "`/poll` — Create a reaction poll with 2–10 comma-separated options."
+    ), inline=False)
+
+    embed.add_field(name="📌  Pinning", value=(
+        "`/pin` — Pin a message in this channel by ID.\n"
+        "`/unpin` — Unpin a message in this channel by ID."
+    ), inline=False)
+
+    embed.add_field(name="📅  Scheduling", value=(
+        "`/schedule` — Schedule a message for a specific date & time (EST). Set `repeat_days` to repeat; `0` = send once.\n"
+        "`/schedule-list` — View all scheduled messages for this server.\n"
+        "`/schedule-delete` — Delete a scheduled message by its ID."
+    ), inline=False)
+
+    embed.add_field(name="🖱️  Right-click (Context Menus)", value=(
+        "**Reply as Sumi Bot** — Reply to any message as the bot.\n"
+        "**Edit Sumi Bot message** — Edit a bot message with the current content pre-filled.\n"
+        "**Delete Sumi Bot message** — Delete a bot message."
+    ), inline=False)
+
+    embed.set_footer(text="Most commands require the Manage Messages permission.")
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+
 # --- /poll ---
 POLL_EMOJIS = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]
 
