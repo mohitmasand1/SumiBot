@@ -208,7 +208,6 @@ async def poll(interaction: discord.Interaction, question: str, options: str):
         description=description,
         color=discord.Color.blurple(),
     )
-    embed.set_footer(text=f"Poll by {interaction.user.display_name}")
 
     await interaction.response.defer(ephemeral=True)
     msg = await interaction.channel.send(embed=embed)
