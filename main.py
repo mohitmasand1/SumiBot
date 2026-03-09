@@ -218,7 +218,7 @@ async def help_command(interaction: discord.Interaction):
     ), inline=False)
 
     embed.set_footer(text="Most commands require the Manage Messages permission.")
-    await interaction.response.send_message(embed=embed, ephemeral=True)
+    await interaction.response.send_message(embed=embed)
 
 # --- /poll ---
 POLL_EMOJIS = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]
