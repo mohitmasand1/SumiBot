@@ -6,6 +6,8 @@ import json
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
+from aiohttp import web
+import asyncio
 
 EST = ZoneInfo("America/New_York")
 SCHEDULES_FILE = "schedules.json"
@@ -21,6 +23,24 @@ intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 tree = bot.tree
+
+# --- HTTP Server for Railway health checks ---
+async def health_check(request):
+    return web.Response(text="OK", status=200)
+
+async def start_http_server():
+    """Start a simple HTTP server for Railway health checks"""
+    app = web.Application()
+    app.router.add_get("/", health_check)
+    app.router.add_get("/health", health_check)
+    
+    port = int(os.getenv("PORT", 8080))
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, "0.0.0.0", port)
+    await site.start()
+    print(f"✅ HTTP server running on port {port}")
+    return runner
 
 # --- Helper ---
 def has_permission(member: discord.Member) -> bool:
@@ -536,5 +556,17 @@ async def context_delete(interaction: discord.Interaction, message: discord.Mess
     await message.delete()
     await silent(interaction)
 
-# --- Run ---
-bot.run(TOKEN)
+# --- Main entry point ---
+async def main():
+    """Start the HTTP server and Discord bot"""
+    # Start HTTP server for Railway
+    http_runner = await start_http_server()
+    
+    try:
+        # Start the Discord bot
+        await bot.start(TOKEN)
+    finally:
+        await http_runner.cleanup()
+
+if __name__ == "__main__":
+    asyncio.run(main())
